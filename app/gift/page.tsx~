@@ -1,0 +1,119 @@
+'use client';
+
+import React, { useEffect, useState } from "react";
+import {getLoggedInUser, isUserLoggedIn} from "@/service/AuthService";
+import { redirect } from "next/navigation";
+import { UserDto } from "@/ds/userprofile.dto";
+import { getAllUserProfiles } from "@/service/StudentPortalService";
+import Image from "next/image";
+import { GiCottonFlower } from "react-icons/gi";
+import { FaSpinner } from "react-icons/fa";
+import {giveRoseGift} from "@/service/RoseGiftService";
+import { GiRose } from "react-icons/gi";
+
+
+export default function Gift() {
+    const [filteredStudent, setFilteredStudent] = useState<UserDto[]>([]);
+    const [allUsers, setAllUsers] = useState<UserDto[]>([]);
+    const [flowerCount, setFlowerCount] = useState<{ [key: string]: number }>({});
+    const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
+
+    function getAllUsers() {
+        getAllUserProfiles()
+            .then(res => setAllUsers(res.data))
+            .catch(err => console.log(err));
+    }
+
+    useEffect(() => {
+        if (!isUserLoggedIn()) {
+            redirect('/login');
+        }
+        getAllUsers();
+    }, []);
+
+    const searchNameFilterHandler = (name: string) => {
+        const filtered = allUsers.filter((user: UserDto) => user.username.toLowerCase().includes(name.toLowerCase()));
+        setFilteredStudent(filtered);
+    }
+
+    const increaseFlowerCount = (username: string) => {
+        setLoading(prev => ({ ...prev, [username]: true }));
+        setTimeout(() => {
+            setFlowerCount(prev => ({ ...prev, [username]: (prev[username] || 0) + 1 }));
+            setLoading(prev => ({ ...prev, [username]: false }));
+        }, 1000); // Simulate an API call delay
+    }
+
+
+
+    const sendRoseGift = ()=>{
+        const userName=getLoggedInUser();
+        const [key, value] = Object.entries(flowerCount)[0];
+        giveRoseGift(userName, key, value)
+            .then(res => {
+                getAllUsers();
+            })
+            .catch(err => console.log(err));
+    }
+
+
+
+    // const sendRoseGift() = () =>{
+    //     const userName = getLoggedInUser();
+    //
+    //     // giveRoseGift(userName,){
+    //     //
+    //     // }
+    // }
+
+    return (
+        <div>
+            <div className="container mx-auto p-5">
+                <h1 className="text-2xl font-bold mb-5">Gift</h1>
+                <input
+                    type="text"
+                    onChange={(e) => searchNameFilterHandler(e.target.value)}
+                    placeholder="Search by username"
+                    className="w-full p-2 border border-gray-300 rounded-lg mb-5"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 bg-purple-100 gap-4">
+                    {filteredStudent.map((user: UserDto) => (
+                        <div key={user.username} className="bg-white p-4 border border-purple-500 rounded-lg shadow-md">
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <Image src={`/${user.profileImage}`} alt={user.username}
+                                           width="200" height="200" className="w-16 h-16 rounded-full mb-3" unoptimized />
+                                    <div className="flex align-items-center">
+                                        <h2 className="text-purple-800 text-lg font-bold text-capitalized">{user.username}</h2>
+                                        <GiRose size={25} className="me-2 text-red-500" />
+                                        <span className="text-pink-500 font-bold bg-pink-100 rounded px-2 py-1">{user.roseCount}</span>
+                                    </div>
+
+                                </div>
+                                <div className="flex items-center">
+                                    <button
+                                        onClick={() => increaseFlowerCount(user.username)}
+                                        className="flex items-center justify-center bg-green-500 text-white p-2 rounded-full"
+                                        disabled={loading[user.username]}
+                                    >
+                                        {loading[user.username] ? (
+                                            <FaSpinner className="animate-spin"/>
+                                        ) : (
+                                            <GiCottonFlower size={25}/>
+                                        )}
+                                    </button>
+                                    <span
+                                        className="text-pink-500 font-bold bg-pink-100 rounded px-2 py-1">{flowerCount[user.username] || 0}</span>
+
+                                    <button onClick={sendRoseGift}
+                                            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full">Send
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
