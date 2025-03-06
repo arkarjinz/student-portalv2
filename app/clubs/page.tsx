@@ -103,7 +103,7 @@ export default function Clubs() {
         setUpdateMode(false);
     };
 
-    // Join handler: automatically use logged-in user's data
+    // Join handler: uses logged-in user's details automatically.
     const handleJoin = () => {
         if (selectedClub) {
             const username = getLoggedInUser();
@@ -123,13 +123,17 @@ export default function Clubs() {
         }
     };
 
-    // (Optional) Quit handler
+    // Quit handler: uses logged-in user's details automatically.
     const handleQuit = () => {
         if (selectedClub) {
             const username = getLoggedInUser();
             quitClub(selectedClub.clubName, username)
                 .then((res) => {
-                    alert("Quit club successfully");
+                    if (res.data === "not a member") {
+                        alert("You are not a member of this club.");
+                    } else {
+                        alert("Quit club successfully");
+                    }
                     setHasJoined(false);
                     fetchAllClubs();
                 })
@@ -328,11 +332,9 @@ export default function Clubs() {
                                 </div>
                             </div>
                         ) : (
-                            // Join Mode: Confirmation for joining (or quitting) the club using logged-in user's data
+                            // Join/ Quit Mode: Confirmation using logged-in user's data.
                             <div>
-                                <h2 className="text-2xl font-bold mb-2">
-                                    {selectedClub?.clubName}
-                                </h2>
+                                <h2 className="text-2xl font-bold mb-2">{selectedClub?.clubName}</h2>
                                 <p className="text-gray-600">{selectedClub?.description}</p>
                                 <p>Total Members: {selectedClub?.studentCount}</p>
                                 <div className="mt-4 flex gap-4">

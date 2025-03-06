@@ -13,7 +13,7 @@ export const getAllClubs = () =>
 export const getClubMembers = (clubName: string) =>
     axios.get<StudentDto[]>(`${CLUB_URI}/members/${clubName}`);
 
-// Join API: uses student details provided by AuthService
+// For joining a club
 export const joinClub = (clubName: string, studentName: string, studentNumber: string) =>
     axios.post(`${CLUB_URI}/join`, {
         club_name: clubName,
@@ -21,19 +21,21 @@ export const joinClub = (clubName: string, studentName: string, studentNumber: s
         student_number: studentNumber,
     });
 
-// (Optional) Quit API if needed:
+// For quitting a club
 export const quitClub = (clubName: string, studentName: string) =>
     axios.post(`${CLUB_URI}/quit`, {
         club_name: clubName,
         student_name: studentName,
     });
 
-// For creating, updating, deleting clubs (admin only)
+// For creating a club (admin only)
 export const createClub = (clubName: string, description: string, clubImage: string) =>
     axios.post(`${CLUB_URI}/create`, { clubName, description, clubImage });
 
+// For updating a club (admin only)
 export const updateClub = (clubName: string, newDescription: string, newClubImage: string) =>
     axios.put(`${CLUB_URI}/update/${clubName}`, { newDescription, newClubImage });
 
+// For deleting a club (admin only)
 export const deleteClub = (clubName: string) =>
     axios.delete(`${CLUB_URI}/delete/${clubName}`);
