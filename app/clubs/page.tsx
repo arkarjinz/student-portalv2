@@ -31,7 +31,8 @@ export default function Clubs() {
 
     const [members, setMembers] = useState<StudentDto[]>([]);
     const [showMembers, setShowMembers] = useState(false);
-    const [hasJoined, setHasJoined] = useState(false);
+    // Instead of one global hasJoined, we maintain a list of club names the student has joined.
+    const [joinedClubNames, setJoinedClubNames] = useState<string[]>([]);
     const [isAdmin, setIsAdmin] = useState(false);
 
     // Determine logged-in user's role on mount
@@ -51,7 +52,7 @@ export default function Clubs() {
             .catch((err) => console.error(err));
     };
 
-    // Open join modal and check membership status
+    // When opening the join modal for a club, check if the student is a member.
     const openJoinModal = (club: ClubInfo) => {
         setSelectedClub(club);
         setModalIsOpen(true);
@@ -62,7 +63,9 @@ export default function Clubs() {
             .then((res) => {
                 const clubMembers: StudentDto[] = res.data;
                 const alreadyJoined = clubMembers.some((m) => m.username === username);
-                setHasJoined(alreadyJoined);
+                if (alreadyJoined && !joinedClubNames.includes(club.clubName)) {
+                    setJoinedClubNames((prev) => [...prev, club.clubName]);
+                }
             })
             .catch((err) => console.error(err));
     };
@@ -98,12 +101,11 @@ export default function Clubs() {
         setCreateClubImage("");
         setShowMembers(false);
         setMembers([]);
-        setHasJoined(false);
         setCreateMode(false);
         setUpdateMode(false);
     };
 
-    // Join handler: uses logged-in user's details automatically.
+    // Join handler: automatically uses logged-in user's details.
     const handleJoin = () => {
         if (selectedClub) {
             const username = getLoggedInUser();
@@ -112,10 +114,9 @@ export default function Clubs() {
                 .then((res) => {
                     if (res.data === "already joined") {
                         alert("You have already joined this club.");
-                        setHasJoined(true);
                     } else {
                         alert("Joined successfully");
-                        setHasJoined(true);
+                        setJoinedClubNames((prev) => [...prev, selectedClub.clubName]);
                         fetchAllClubs();
                     }
                 })
@@ -123,7 +124,7 @@ export default function Clubs() {
         }
     };
 
-    // Quit handler: uses logged-in user's details automatically.
+    // Quit handler: remove membership
     const handleQuit = () => {
         if (selectedClub) {
             const username = getLoggedInUser();
@@ -133,9 +134,11 @@ export default function Clubs() {
                         alert("You are not a member of this club.");
                     } else {
                         alert("Quit club successfully");
+                        setJoinedClubNames((prev) =>
+                            prev.filter((clubName) => clubName !== selectedClub.clubName)
+                        );
+                        fetchAllClubs();
                     }
-                    setHasJoined(false);
-                    fetchAllClubs();
                 })
                 .catch((err) => console.error(err));
         }
@@ -200,7 +203,7 @@ export default function Clubs() {
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {clubs.map((club) => (
-                    <div key={club.clubName} className="border rounded p-4 shadow">
+                    <div key={club.clubName} className="relative border rounded p-4 shadow">
                         <img
                             src={club.clubImage || "/defaultClub.png"}
                             alt={club.clubName}
@@ -209,12 +212,18 @@ export default function Clubs() {
                         <h2 className="text-xl font-semibold">{club.clubName}</h2>
                         <p className="text-gray-600">{club.description}</p>
                         <p>Total Members: {club.studentCount}</p>
+                        {/* Show "Joined" badge only if the club is in the joinedClubNames set */}
+                        {joinedClubNames.includes(club.clubName) && (
+                            <span className="absolute top-2 right-2 text-xs bg-green-200 text-green-800 px-1 rounded">
+                Joined
+              </span>
+                        )}
                         <div className="flex flex-wrap gap-2 mt-2">
                             <button
                                 className="bg-green-600 text-white px-4 py-2 rounded"
                                 onClick={() => openJoinModal(club)}
                             >
-                                {hasJoined ? "Joined" : "Join / Quit"}
+                                {joinedClubNames.includes(club.clubName) ? "Join / Quit" : "Join / Quit"}
                             </button>
                             {isAdmin && (
                                 <>
@@ -332,23 +341,23 @@ export default function Clubs() {
                                 </div>
                             </div>
                         ) : (
-                            // Join/ Quit Mode: Confirmation using logged-in user's data.
+                            // Join / Quit Mode: Confirmation using logged-in user's details.
                             <div>
                                 <h2 className="text-2xl font-bold mb-2">{selectedClub?.clubName}</h2>
                                 <p className="text-gray-600">{selectedClub?.description}</p>
                                 <p>Total Members: {selectedClub?.studentCount}</p>
                                 <div className="mt-4 flex gap-4">
-                                    {hasJoined ? (
+                                    {joinedClubNames.includes(selectedClub?.clubName || "") ? (
                                         <button
                                             onClick={handleQuit}
-                                            className="bg-orange-600 text-white px-4 py-2 rounded"
+                                            className="bg-orange-600 text-white px-3 py-1 rounded text-xs"
                                         >
                                             Quit Club
                                         </button>
                                     ) : (
                                         <button
                                             onClick={handleJoin}
-                                            className="bg-blue-600 text-white px-4 py-2 rounded"
+                                            className="bg-blue-600 text-white px-3 py-1 rounded text-xs"
                                         >
                                             Join Club
                                         </button>
