@@ -5,7 +5,7 @@ import { fadeIn } from "@/variant";
 
 const Feature = () => {
     return (
-        <section className="flex-col flexCenter overflow-hidden py-24 bg-feature-bg bg-center bg-no-repeat">
+        <section className="flex-col flexCenter overflow-hidden py-24  bg-center bg-no-repeat">
             <motion.div className="max-container padding-container relative w-full flex flex-col lg:flex-row items-center"  variants={fadeIn('down', 0.3)} initial="hidden" whileInView={'show'} viewport={{ once: false, amount: 0.1 }}>
                 {/* Image Section */}
                 <div className="flex flex-1 justify-center">

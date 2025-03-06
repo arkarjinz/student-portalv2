@@ -5,7 +5,7 @@ export const NAV_LINKS = [
     { href: '/', key: 'how_unityverse_work', label: 'How UnityVerse Work?' },
     { href: '/', key: 'services', label: 'Services' },
 
-    { href: '/', key: 'contact_us', label: 'Contact Us' },
+    { href: '/userprofile', key: 'Profile', label: 'Profile' },
 
     {  href: '/posts' , key: 'posts', label: 'Posts'} ,
     { href: '/gift' , key: 'gift', label: 'Gift'} ,

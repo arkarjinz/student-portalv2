@@ -58,7 +58,7 @@ const MeetUs = () => {
     ];
 
     return (
-        <motion.section className="bg-white py-16 px-6 "
+        <motion.section className=" py-16 px-6 "
                          variants={fadeIn('down', 0.3)} initial="hidden" whileInView={'show'} viewport={{once: false, amount: 0.2}}>
             <div className=" max-container padding-container">
                 <h2 className="bold-20 lg:bold-32 mt-5 text-center mb-6 text-gray-900">

@@ -3,5 +3,6 @@ export type UserDto = {
     email : string,
     avatarUrl : string;
     profileImage: string;
-    roseCount:number
+    roseCount:number;
+    studentNumber ?: string;
 }
