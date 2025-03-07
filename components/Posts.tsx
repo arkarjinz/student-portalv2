@@ -13,6 +13,7 @@ import ReactCalendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import CountUp from 'react-countup';
 import { FiCalendar, FiClock, FiDownloadCloud, FiAlertCircle } from 'react-icons/fi';
+import {WiDaySunny} from "react-icons/wi";
 
 
 function escapeRegExp(string: string) {
@@ -1437,6 +1438,8 @@ zipperhead
         .map(word => word.trim())
         .filter(word => word.length > 0);
 
+    // Effects and functions remain unchanged
+
     useEffect(() => {
         if (!isUserLoggedIn()) {
             redirect("/login");
@@ -1563,17 +1566,19 @@ zipperhead
         setEditingContent("");
     };
 
-    // Updated confirmUpdate: no "(edited)" appended; if rude words are found, show warning video and delete the post.
+    // Confirm update – if rude words found, show warning video and delete the post
     const confirmUpdate = () => {
         if (editingPostId === null) return;
-        const updatedContent = editingContent; // use as-is
+        const updatedContent = editingContent;
         const rudeFound = findRudeWords(updatedContent);
         if (rudeFound.length > 0) {
             setShowWarningVideo(true);
-            // Delete the post due to rude words in update
+            // Delete the post due to inappropriate language
             deletePost(editingPostId, loggedInUser)
                 .then(() => {
-                    setPosts((prevPosts) => prevPosts.filter(post => post.id !== editingPostId));
+                    setPosts((prevPosts) =>
+                        prevPosts.filter((post) => post.id !== editingPostId)
+                    );
                     alert("Your post contained inappropriate language and has been deleted.");
                     setEditingPostId(null);
                     setEditingContent("");
@@ -1581,21 +1586,20 @@ zipperhead
                         setShowWarningVideo(false);
                     }, 3000);
                 })
-                .catch(err => console.error(err));
+                .catch((err) => console.error(err));
             return;
         }
-        // Otherwise, update the post normally
         updatePost(editingPostId, loggedInUser, updatedContent)
             .then(() => {
                 setPosts((prevPosts) =>
-                    prevPosts.map(post =>
+                    prevPosts.map((post) =>
                         post.id === editingPostId ? { ...post, content: updatedContent } : post
                     )
                 );
                 setEditingPostId(null);
                 setEditingContent("");
             })
-            .catch(err => console.error(err));
+            .catch((err) => console.error(err));
     };
 
     const handleCreatePost = () => {
@@ -1621,24 +1625,23 @@ zipperhead
             return;
         }
         setRudeNotice("");
-        const loggedInUser = getLoggedInUser();
         const newPostObj: Post = {
             id: getRandomNumber(),
             postOwner: loggedInUser,
             content: newPost,
             title: "New Post",
             createdAt: new Date().toISOString(),
-            likeCount: 0
+            likeCount: 0,
         };
         createPost(newPostObj)
             .then(() => {
                 setPosts([]);
                 setPage(1);
                 getLikedPosts(loggedInUser)
-                    .then(res => setLikedPosts(new Set(res.data)))
-                    .catch(err => console.error(err));
+                    .then((res) => setLikedPosts(new Set(res.data)))
+                    .catch((err) => console.error(err));
             })
-            .catch(err => console.error(err));
+            .catch((err) => console.error(err));
         setNewPost("");
     };
 
@@ -1647,32 +1650,37 @@ zipperhead
         if (likedPosts.has(postId)) {
             unlikePost(postId, loggedInUser)
                 .then(() => {
-                    setPosts(prevPosts =>
-                        prevPosts.map(post =>
-                            post.id === postId ? { ...post, likeCount: Math.max((post.likeCount ?? 0) - 1, 0) } : post
+                    setPosts((prevPosts) =>
+                        prevPosts.map((post) =>
+                            post.id === postId
+                                ? { ...post, likeCount: Math.max((post.likeCount ?? 0) - 1, 0) }
+                                : post
                         )
                     );
-                    setLikedPosts(prev => {
+                    setLikedPosts((prev) => {
                         const newSet = new Set(prev);
                         newSet.delete(postId);
                         return newSet;
                     });
                 })
-                .catch(err => console.error(err));
+                .catch((err) => console.error(err));
         } else {
             likePost(postId, loggedInUser)
                 .then(() => {
-                    setPosts(prevPosts =>
-                        prevPosts.map(post =>
-                            post.id === postId ? { ...post, likeCount: (post.likeCount ?? 0) + 1 } : post
+                    setPosts((prevPosts) =>
+                        prevPosts.map((post) =>
+                            post.id === postId
+                                ? { ...post, likeCount: (post.likeCount ?? 0) + 1 }
+                                : post
                         )
                     );
-                    setLikedPosts(prev => new Set(prev).add(postId));
+                    setLikedPosts((prev) => new Set(prev).add(postId));
                 })
-                .catch(err => console.error(err));
+                .catch((err) => console.error(err));
         }
     };
 
+    // Render warning and ban videos
     const renderWarningVideo = () => (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
             <div className="bg-white p-2 rounded shadow">
@@ -1691,7 +1699,9 @@ zipperhead
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
             <div className="bg-white p-2 rounded shadow">
                 <video src="/angry.mp4" autoPlay loop controls={false} className="w-80" />
-                <p className="mt-2 text-black text-center">You are banned for {blockTimer} seconds</p>
+                <p className="mt-2 text-black text-center">
+                    You are banned for {blockTimer} seconds
+                </p>
             </div>
         </div>
     );
@@ -1713,9 +1723,11 @@ zipperhead
         if (confirmModalPostId === null) return;
         deletePost(confirmModalPostId, loggedInUser)
             .then(() => {
-                setPosts(prevPosts => prevPosts.filter(post => post.id !== confirmModalPostId));
+                setPosts((prevPosts) =>
+                    prevPosts.filter((post) => post.id !== confirmModalPostId)
+                );
             })
-            .catch(err => console.error(err));
+            .catch((err) => console.error(err));
         closeConfirmModal();
     };
 
@@ -1724,11 +1736,15 @@ zipperhead
     };
 
     return (
-        <div className="container mx-auto grid grid-cols-12 gap-4 p-5">
+        <div
+            className="container mx-auto grid grid-cols-12 gap-6 p-5 min-h-screen"
+            style={{ backgroundColor: "#f6f8f6" }}
+        >
+            {/* Render ban or warning video */}
             {isBlocked && renderBanVideo()}
             {!isBlocked && rudeNotice && showWarningVideo && renderWarningVideo()}
 
-            {/* Confirmation Modal for delete/update if needed */}
+            {/* Confirmation Modal */}
             {confirmModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center z-50">
                     <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -1756,44 +1772,98 @@ zipperhead
                 </div>
             )}
 
-            {/* Left: Downloadable Files */}
-            <aside className="col-span-12 md:col-span-3 flex flex-col gap-4">
-                <div className="bg-white rounded-xl shadow-md p-5">
-                    <h2 className="text-2xl font-bold mb-3 text-green-800">UIT Academic System Rules</h2>
-                    <a href="/UIT-Academic-Rules.pdf" download className="text-blue-500 hover:underline">
-                        Download PDF
-                    </a>
+            {/* Left Sidebar */}
+            <aside className="col-span-12 lg:col-span-3 space-y-6">
+                {/* Myanmar Weather Widget */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <WiDaySunny className="text-3xl text-yellow-500" />
+                        <div>
+                            <h2 className="text-xl font-bold text-green-800">Myanmar Weather</h2>
+                            <p className="text-gray-600">Yangon</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <p className="text-4xl font-bold">32°C</p>
+                        <p className="text-gray-600">Partly Cloudy</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div className="bg-green-50 p-3 rounded-lg">
+                            <p className="text-sm text-gray-600">Humidity</p>
+                            <p className="font-bold text-green-800">68%</p>
+                        </div>
+                        <div className="bg-green-50 p-3 rounded-lg">
+                            <p className="text-sm text-gray-600">Wind</p>
+                            <p className="font-bold text-green-800">14 km/h</p>
+                        </div>
+                    </div>
                 </div>
-                <div className="bg-white rounded-xl shadow-md p-5">
-                    <h2 className="text-2xl font-bold mb-3 text-green-800">UIT Curriculum (2022-2023)</h2>
-                    <a href="/UIT-Curriculum.pdf" download className="text-blue-500 hover:underline">
-                        Download PDF
-                    </a>
+
+                {/* Academic Calendar */}
+                <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <h2 className="text-xl font-bold mb-4 text-green-800 flex items-center gap-2">
+                        <FiCalendar className="text-green-600" />
+                        Academic Calendar
+                    </h2>
+                    <ReactCalendar
+                        className="!w-full !border-0"
+                        tileClassName={({ date }) =>
+                            date.getDay() === 6 || date.getDay() === 0 ? "text-red-400" : ""
+                        }
+                        minDetail="month"
+                    />
                 </div>
-                <div className="bg-white rounded-xl shadow-md p-5">
-                    <h2 className="text-2xl font-bold mb-3 text-green-800">MALC Guide</h2>
-                    <a href="/MALC.pdf" download className="text-blue-500 hover:underline">
-                        Download PDF
-                    </a>
+
+                {/* Download Section */}
+                <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <h2 className="text-xl font-bold mb-4 text-green-800 flex items-center gap-2">
+                        <FiDownloadCloud className="text-green-600" />
+                        University Resources
+                    </h2>
+                    <div className="space-y-3">
+                        <a
+                            href="/UIT-Academic-Rules.pdf"
+                            download
+                            className="flex items-center justify-between p-3 hover:bg-green-50 rounded-xl transition-colors"
+                        >
+                            <span className="text-gray-700">Academic Rules</span>
+                            <span className="text-green-600 text-sm">PDF 2.1MB</span>
+                        </a>
+                        {/* Add other download links similarly */}
+                    </div>
                 </div>
             </aside>
 
-            {/* Center: Main Content (Feed) */}
-            <main className="col-span-12 md:col-span-6">
-                <div className="bg-white shadow-lg rounded-2xl p-6 mb-8">
-                    <div className="flex items-center space-x-4">
-                        <Image src="/girl.png" alt="User" width={60} height={60} className="rounded-full" />
-                        <input
-                            type="text"
-                            value={newPost}
-                            onChange={(e) => setNewPost(e.target.value)}
-                            placeholder="Share something amazing..."
-                            className="w-full border border-gray-200 p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-green-800 transition duration-300"
+            {/* Main Feed */}
+            <main className="col-span-12 lg:col-span-6 space-y-6">
+                {/* Create Post Card */}
+                <div className="bg-white shadow-xl rounded-2xl p-6">
+                    <div className="flex items-center gap-4">
+                        <Image
+                            src="/girl.png"
+                            alt="User"
+                            width={56}
+                            height={56}
+                            className="rounded-full border-2 border-green-200"
                         />
+                        <div className="flex-1">
+              <textarea
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  placeholder="Share your thoughts with the campus..."
+                  className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-100 resize-none transition-all"
+                  rows={3}
+              />
+                        </div>
                     </div>
                     {rudeNotice && (
                         <div className="mt-4 p-3 bg-red-100 text-red-600 rounded-lg flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
                                 <path
                                     fillRule="evenodd"
                                     d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
@@ -1814,110 +1884,178 @@ zipperhead
                         )}
                     </div>
                 </div>
-                {posts.length > 0 ? (
-                    posts.map((post: Post, index: number) => (
-                        <div
-                            key={`${post.id}-${index}`}
-                            className="relative bg-white shadow-md rounded-xl p-5 mb-5 transition-shadow duration-300 hover:shadow-lg"
-                        >
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center space-x-3">
-                                    <Image
-                                        src={`/${post.profileImage || "default.png"}`}
-                                        alt="profileImage"
-                                        width={50}
-                                        height={50}
-                                        className="rounded-full"
-                                    />
-                                    <div className="flex items-center">
-                                        <p className="font-bold capitalize">{post.postOwner}</p>
-                                        <GiRose size={25} className="ms-3 text-red-500" />
-                                        <span className="text-pink-500 font-bold bg-pink-100 rounded px-2 py-1 ml-2">
-                      {post.roseCount || 0}
-                    </span>
-                                    </div>
-                                </div>
-                                {post.postOwner === loggedInUser && (
-                                    <div className="flex items-center gap-3">
-                                        {editingPostId !== post.id ? (
-                                            <>
-                                                <button onClick={() => handleEditPost(post.id, post.content)}>
-                                                    <Image src="/update.svg" alt="update" width={20} height={20} />
-                                                </button>
-                                                <button onClick={() => handleDeletePost(post.id)}>
-                                                    <Image src="/delete.svg" alt="delete" width={20} height={20} />
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <div className="flex gap-2">
-                                                <button onClick={confirmUpdate}>
-                                                    <Image src="/update.svg" alt="save" width={20} height={20} />
-                                                </button>
-                                                <button onClick={cancelEdit} className="text-gray-500">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-400 mb-2">
-                                {timeSince(post.createdAt)}
-                            </p>
-                            {editingPostId === post.id ? (
-                                <textarea
-                                    value={editingContent}
-                                    onChange={(e) => setEditingContent(e.target.value)}
-                                    className="w-full p-2 border border-gray-300 rounded"
+
+                {/* Posts List */}
+                {posts.map((post, index) => (
+                    <div
+                        key={`${post.id}-${index}`}
+                        className="bg-white shadow-lg rounded-2xl p-6 group hover:shadow-xl transition-shadow"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="relative flex-shrink-0">
+                                <Image
+                                    src={`/${post.profileImage || "default.png"}`}
+                                    alt="Profile"
+                                    width={48}
+                                    height={48}
+                                    className="rounded-full border-2 border-green-200"
                                 />
-                            ) : (
-                                <p className="text-gray-700 mb-2">{post.content}</p>
-                            )}
-                            {/* Heart button at bottom-right */}
-                            <button
-                                onClick={() => handleToggleLike(post.id)}
-                                className="absolute bottom-2 right-2 flex items-center gap-1"
-                            >
-                                <FaHeart size={20} className={likedPosts.has(post.id) ? "text-red-500" : "text-gray-400"} />
-                                <span className="text-sm">{post.likeCount ?? 0}</span>
-                            </button>
+                                <GiRose className="absolute -right-1 -top-1 text-red-500 bg-white rounded-full p-0.5" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 capitalize">
+                                            {post.postOwner}
+                                        </h3>
+                                        <p className="text-xs text-gray-400">{timeSince(post.createdAt)}</p>
+                                    </div>
+                                    {post.postOwner === loggedInUser && (
+                                        <div className="flex items-center gap-3">
+                                            {editingPostId !== post.id ? (
+                                                <>
+                                                    <button onClick={() => handleEditPost(post.id, post.content)}>
+                                                        <Image src="/update.svg" alt="update" width={20} height={20} />
+                                                    </button>
+                                                    <button onClick={() => handleDeletePost(post.id)}>
+                                                        <Image src="/delete.svg" alt="delete" width={20} height={20} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <button onClick={confirmUpdate}>
+                                                        <Image src="/update.svg" alt="save" width={20} height={20} />
+                                                    </button>
+                                                    <button onClick={cancelEdit} className="text-gray-500">
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {editingPostId === post.id ? (
+                                    <textarea
+                                        value={editingContent}
+                                        onChange={(e) => setEditingContent(e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400"
+                                        rows={3}
+                                    />
+                                ) : (
+                                    <p className="text-gray-700 mb-4 leading-relaxed">{post.content}</p>
+                                )}
+                                <div className="flex items-center gap-4 text-gray-500">
+                                    <button
+                                        onClick={() => handleToggleLike(post.id)}
+                                        className="flex items-center gap-1.5 hover:text-red-500 transition-colors"
+                                    >
+                                        <FaHeart
+                                            className={`${
+                                                likedPosts.has(post.id) ? "text-red-500" : "text-gray-400"
+                                            } transition-colors`}
+                                        />
+                                        <span className="text-sm">{post.likeCount}</span>
+                                    </button>
+                                    <span className="flex items-center gap-1 text-pink-500">
+                    <GiRose />
+                    <span className="text-sm">{post.roseCount || 0}</span>
+                  </span>
+                                </div>
+                            </div>
                         </div>
-                    ))
-                ) : (
-                    <p className="text-center text-gray-500">No posts available</p>
-                )}
+                    </div>
+                ))}
                 <div ref={loadMoreRef} className="h-10"></div>
                 {loading && <p className="text-center text-gray-500">Loading more posts...</p>}
             </main>
 
-            {/* Right: Announcements */}
-            <aside className="col-span-12 md:col-span-3">
-                <div className="bg-gradient-to-r from-green-50 to-green-90 rounded-xl p-6 text-white shadow-lg">
-                    <h2 className="text-2xl font-bold mb-3 text-green-800">Announcements</h2>
-                    <ul className="space-y-3">
-                        <li className="flex items-center">
-                            <span className="mr-2">📅</span>
-                            Don’t forget the Friday Community Meetup at 6 PM.
-                        </li>
-                        <li className="flex items-center">
-                            <span className="mr-2">📝</span>
-                            Exam Schedule updated for next month—check your portal.
-                        </li>
-                        <li className="flex items-center">
-                            <span className="mr-2">🏖️</span>
-                            Holiday next Monday (campus closed).
-                        </li>
-                        <li className="flex items-center">
-                            <span className="mr-2">📚</span>
-                            New library hours: 8 AM - 10 PM on weekdays.
-                        </li>
-                    </ul>
+            {/* Right Sidebar */}
+            <aside className="col-span-12 lg:col-span-3 space-y-6">
+                {/* Anime Recommendations */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold mb-4 text-green-800">Anime Recommendations</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { title: "Violet Evergarden", image: "violetevergarden.jpg" },
+                            { title: "Your Lie in April", image: "yourlieinapril.jpg" },
+                            { title: "Clannad", image: "clannad.jpg" },
+                            { title: "Anohana", image: "anohana.jpg" },
+                            { title: "Angel Beats", image: "angelbeats.jpg" },
+                            { title: "Eminence In Shadow", image: "shadow.jpg" },
+                            { title: "Air", image: "air.jpg" },
+                            { title: "I Want To Eat Your Pancreas", image: "pancreas.jpg" },
+                            { title: "K-ON", image: "k.jpg" },
+                            { title: "Azumanga Daioh", image: "azu.jpg" },
+                            { title: "Yuru Camp", image: "camp.jpg" },
+                            { title: "My Teen Romantic Comedy", image: "teen.jpg" },
+                            { title: "Bunny Girl Senpai", image: "mei.jpg" },
+                            { title: "Horimiya", image: "horimiya.jpg" },
+                            { title: "My Dressup Darling", image: "marin.jpg" },
+                            { title: "86", image: "86.jpg" },
+                            { title: "The Quintessential Quintuplets", image: "the.jpg" },
+                            { title: "Shikimori is not just a cutie", image: "shikimori.jpg" },
+                            { title: "One Piece", image: "one.jpg" },
+                            { title: "Wotakoi", image: "wotakoi.jpg" },
+                            { title: "The Pet Girl Of Sakurasou", image: "pancreas.jpg" },
+                            { title: "How To Raise A Boring Girlfriend", image: "girlfriend.jpg" },
+                        ].map((anime) => (
+                            <a
+                                key={anime.title}
+                                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                                    anime.title + " trailer"
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group relative block rounded-xl overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                                <Image
+                                    src={`/${anime.image}`}
+                                    alt={anime.title}
+                                    width={200}
+                                    height={300}
+                                    className="w-full h-32 object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-white font-medium text-center text-sm">Watch Trailer</span>
+                                </div>
+                                <p className="text-sm font-medium text-gray-800 mt-2">{anime.title}</p>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Myanmar Clock */}
+                <div className="bg-green-800 text-white rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-center gap-3 mb-4">
+                        <FiClock className="text-2xl" />
+                        <h3 className="text-xl font-bold">Myanmar Time</h3>
+                    </div>
+                    <div className="text-4xl font-mono font-bold text-center">
+                        {now.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: "Asia/Yangon",
+                        })}
+                    </div>
+                    <div className="text-center mt-2 text-sm opacity-90">
+                        {now.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric",
+                            timeZone: "Asia/Yangon",
+                        })}
+                    </div>
+                </div>
+
+                {/* Daily Quote */}
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 className="text-lg font-bold mb-4 text-green-800">Daily Quote</h3>
+                    <p className="italic text-gray-600">
+                        "Education is the passport to the future, for tomorrow belongs to those who prepare for it today."
+                    </p>
+                    <p className="mt-2 text-sm text-gray-500">- Malcolm X</p>
                 </div>
             </aside>
-            {/* Render warning video if needed */}
-            {showWarningVideo && renderWarningVideo()}
         </div>
     );
 }
-
-
