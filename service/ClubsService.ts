@@ -8,7 +8,7 @@ export const getClubInfo = () =>
     axios.get<ClubInfo[]>(`${CLUB_URI}/club-info`);
 
 export const getAllClubs = () =>
-    axios.get<ClubInfo[]>(`${CLUB_URI}/all`);
+    axios.get<ClubInfo[]>(`${CLUB_URI}/`);
 
 export const getClubMembers = (clubName: string) =>
     axios.get<StudentDto[]>(`${CLUB_URI}/members/${clubName}`);

@@ -7,12 +7,13 @@ import { UserDto } from "@/ds/userprofile.dto";
 import { getAllUserProfiles } from "@/service/StudentPortalService";
 import Image from "next/image";
 import { GiCottonFlower, GiRose } from "react-icons/gi";
-import { FaSpinner } from "react-icons/fa";
+import {FaCheck, FaSpinner} from "react-icons/fa";
 import { giveRoseGift } from "@/service/RoseGiftService";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function Gift() {
-    const [filteredStudent, setFilteredStudent] = useState<UserDto[]>([]);
     const [allUsers, setAllUsers] = useState<UserDto[]>([]);
+    const [filteredStudent, setFilteredStudent] = useState<UserDto[]>([]);
     const [flowerCount, setFlowerCount] = useState<{ [key: string]: number }>({});
     const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -20,11 +21,18 @@ export default function Gift() {
     const [isSuccess, setIsSuccess] = useState(false);
     const [zeroQuantityNotice, setZeroQuantityNotice] = useState(false);
 
+    const currentUsername = getLoggedInUser();
+
     function getAllUsers() {
         getAllUserProfiles()
             .then((res) => {
                 setAllUsers(res.data);
-                setFilteredStudent(res.data);
+                // Exclude the current logged-in user from the gift list
+                const others = res.data.filter(
+                    (user: UserDto) =>
+                        user.username.toLowerCase() !== currentUsername.toLowerCase()
+                );
+                setFilteredStudent(others);
             })
             .catch((err) => console.log(err));
     }
@@ -37,9 +45,15 @@ export default function Gift() {
     }, []);
 
     const searchNameFilterHandler = (name: string) => {
-        const filtered = allUsers.filter((user: UserDto) =>
-            user.username.toLowerCase().includes(name.toLowerCase())
-        );
+        // Filter the already filtered list (without the current user)
+        const filtered = allUsers
+            .filter(
+                (user: UserDto) =>
+                    user.username.toLowerCase() !== currentUsername.toLowerCase()
+            )
+            .filter((user: UserDto) =>
+                user.username.toLowerCase().includes(name.toLowerCase())
+            );
         setFilteredStudent(filtered);
     };
 
@@ -59,7 +73,7 @@ export default function Gift() {
     };
 
     const sendRoseGiftForUser = async (targetUsername: string) => {
-        const sender = getLoggedInUser();
+        const sender = currentUsername;
         const giftCount = flowerCount[targetUsername] || 0;
         return giveRoseGift(sender, targetUsername, giftCount)
             .then((res) => {
@@ -72,6 +86,7 @@ export default function Gift() {
     const handleConfirmSend = () => {
         if (!selectedUser) return;
         sendRoseGiftForUser(selectedUser).then(() => {
+            // Reset the gift counter for the selected user after success.
             setFlowerCount((prev) => ({ ...prev, [selectedUser]: 0 }));
             setIsSuccess(true);
             setTimeout(() => {
@@ -82,152 +97,247 @@ export default function Gift() {
         });
     };
 
+    // Find the current user's profile to show how many roses they have.
+    const currentUserProfile = allUsers.find(
+        (user) =>
+            user.username.toLowerCase() === currentUsername.toLowerCase()
+    );
+
     return (
-        <div className="min-h-screen bg-white py-8">
-            {/* Top Navigation/Header */}
-            <header className="border-b border-gray-200 mb-8">
-                <div className="container mx-auto px-4 flex items-center justify-between">
-                    <h1 className="text-4xl font-bold text-gray-800">Gift a Rose</h1>
-                    <input
-                        type="text"
-                        onChange={(e) => searchNameFilterHandler(e.target.value)}
-                        placeholder="Search by username..."
-                        className="w-full max-w-sm p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 transition"
-                    />
+        <div className="min-h-screen py-8" style={{backgroundColor: '#f6f8f6'}}>
+            {/* Floating Rose Petals Background - Add pointer-events-none */}
+            <div className="absolute inset-0 overflow-hidden opacity-20 pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                    <motion.div
+                        key={i}
+                        className="absolute text-green-200"
+                        initial={{y: -100, x: Math.random() * 100}}
+                        animate={{
+                            y: [0, 1000],
+                            x: Math.random() * 100,
+                            rotate: Math.random() * 360,
+                        }}
+                        transition={{
+                            duration: 5 + Math.random() * 10,
+                            repeat: Infinity,
+                            ease: "linear",
+                        }}
+                        style={{
+                            left: `${Math.random() * 100}%`,
+                            fontSize: `${10 + Math.random() * 20}px`,
+                        }}
+                    >
+                        ✿
+                    </motion.div>
+                ))}
+            </div>
+
+            {/* Header Section */}
+            <header className="relative mb-12">
+                <div className="container mx-auto px-4">
+                    <motion.div
+                        initial={{opacity: 0, y: 20}}
+                        animate={{opacity: 1, y: 0}}
+                        className="bg-gradient-to-r from-rose-300 to-pink-400 p-8 rounded-3xl shadow-2xl"
+                    >
+                        <h1 className="text-4xl font-bold text-white mb-4 text-center">
+                            🌹 Spread Love with Roses
+                        </h1>
+
+                        <div className="max-w-md mx-auto relative">
+                            <input
+                                type="text"
+                                onChange={(e) => searchNameFilterHandler(e.target.value)}
+                                placeholder="Search friends..."
+                                className="w-full pl-12 pr-4 py-3 rounded-full bg-white/90 backdrop-blur-sm shadow-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                            />
+                            <svg
+                                className="absolute left-4 top-3.5 h-5 w-5 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+
+                        {currentUserProfile && (
+                            <motion.div
+                                className="mt-6 bg-rose-100/30 backdrop-blur-sm p-4 rounded-2xl text-center mx-auto max-w-xs"
+                                initial={{scale: 0.9}}
+                                animate={{scale: 1}}
+                            >
+                                <p className="text-lg font-semibold text-rose-800">
+                                    Your Rose Bank:{" "}
+                                    <span className="text-2xl text-rose-600">
+                                    {currentUserProfile.roseCount}
+                                </span>
+                                </p>
+                            </motion.div>
+                        )}
+                    </motion.div>
                 </div>
             </header>
 
-            {/* Users List as a Table */}
+            {/* User Grid - Updated Colors */}
             <div className="container mx-auto px-4">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                    <tr className="border-b border-gray-300">
-                        <th className="py-3 px-4 text-gray-700">Profile</th>
-                        <th className="py-3 px-4 text-gray-700">Username</th>
-                        <th className="py-3 px-4 text-gray-700">Current Roses</th>
-                        <th className="py-3 px-4 text-gray-700">Add Gift</th>
-                        <th className="py-3 px-4 text-gray-700">Gift Qty</th>
-                        <th className="py-3 px-4 text-gray-700">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {filteredStudent.map((user: UserDto) => (
-                        <tr
-                            key={user.username}
-                            className="hover:bg-emerald-50 transition-colors border-b border-gray-200"
-                        >
-                            <td className="py-4 px-4">
-                                <Image
-                                    src={`/${user.profileImage}`}
-                                    alt={user.username}
-                                    width={50}
-                                    height={50}
-                                    className="rounded-full"
-                                    unoptimized
-                                />
-                            </td>
-                            <td className="py-4 px-4 text-gray-800 font-medium capitalize">
-                                {user.username}
-                            </td>
-                            <td className="py-4 px-4 flex items-center space-x-2">
-                                <GiRose size={22} className="text-red-500" />
-                                <span className="font-semibold text-pink-600">{user.roseCount}</span>
-                            </td>
-                            <td className="py-4 px-4">
-                                <button
-                                    onClick={() => increaseFlowerCount(user.username)}
-                                    disabled={loading[user.username]}
-                                    className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-full p-2 transition"
-                                >
-                                    {loading[user.username] ? (
-                                        <FaSpinner className="animate-spin" />
-                                    ) : (
-                                        <GiCottonFlower size={22} />
-                                    )}
-                                </button>
-                            </td>
-                            <td className="py-4 px-4">
-                  <span className="font-medium text-gray-800">
-                    {flowerCount[user.username] || 0}
-                  </span>
-                            </td>
-                            <td className="py-4 px-4 space-x-4">
-                                <button
-                                    onClick={() => {
-                                        if ((flowerCount[user.username] || 0) === 0) {
-                                            setZeroQuantityNotice(true);
-                                            setTimeout(() => setZeroQuantityNotice(false), 2000);
-                                            return;
-                                        }
-                                        setSelectedUser(user.username);
-                                        setShowConfirmation(true);
-                                    }}
-                                    className="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded transition"
-                                >
-                                    Send
-                                </button>
-                                <button
-                                    onClick={() => resetFlowerCount(user.username)}
-                                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded transition"
-                                >
-                                    Reset
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            </div>
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    initial={{opacity: 0}}
+                    animate={{opacity: 1}}
+                >
+                    <AnimatePresence>
+                        {filteredStudent.map((user: UserDto) => (
+                            <motion.div
+                                key={user.username}
+                                className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-gray-100"
+                            >
+                                <div className="p-6">
+                                    <div className="flex items-center space-x-4 mb-4">
+                                        <div className="relative">
+                                            <Image
+                                                src={`/${user.profileImage}`}
+                                                alt={user.username}
+                                                width={64}
+                                                height={64}
+                                                className="rounded-full border-4 border-rose-50"
+                                                unoptimized
+                                            />
+                                            <div className="absolute -bottom-2 -right-2 bg-rose-500 p-1.5 rounded-full">
+                                                <GiRose className="text-white text-sm"/>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-800 capitalize">
+                                                {user.username}
+                                            </h3>
+                                            <p className="flex items-center text-rose-700">
+                                            <span className="font-semibold">
+                                                {user.roseCount}
+                                            </span>
+                                                <GiRose className="ml-1"/>
+                                            </p>
+                                        </div>
+                                    </div>
 
-            {/* Confirmation Modal */}
-            {showConfirmation && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-8 shadow-xl max-w-sm w-full">
-                        {isSuccess ? (
-                            <div className="text-center">
-                                <h2 className="text-3xl font-bold text-green-700 mb-4">Success!</h2>
-                                <p className="text-green-600">
-                                    Your rose gift has been sent.
-                                </p>
-                            </div>
-                        ) : (
-                            <div>
-                                <h2 className="text-2xl font-bold text-green-700 mb-4">
-                                    Confirm Gift
-                                </h2>
-                                <p className="text-gray-700 mb-6">
-                                    Are you sure you want to send a gift to{" "}
-                                    <span className="font-bold">{selectedUser}</span>?
-                                </p>
-                                <div className="flex justify-end space-x-4">
-                                    <button
-                                        onClick={() => {
-                                            setShowConfirmation(false);
-                                            setSelectedUser(null);
-                                        }}
-                                        className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded transition"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleConfirmSend}
-                                        className="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded transition"
-                                    >
-                                        Confirm
-                                    </button>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-3">
+                                            <button
+                                                onClick={() => increaseFlowerCount(user.username)}
+                                                disabled={loading[user.username]}
+                                                className="flex items-center justify-center h-12 w-12 rounded-full bg-gradient-to-br from-rose-300 to-pink-400 hover:from-rose-400 hover:to-pink-500 text-white shadow-lg transition-all"
+                                            >
+                                                {loading[user.username] ? (
+                                                    <FaSpinner className="animate-spin"/>
+                                                ) : (
+                                                    <GiCottonFlower className="text-xl"/>
+                                                )}
+                                            </button>
+                                            <div className="text-2xl font-bold text-gray-700">
+                                                {flowerCount[user.username] || 0}
+                                            </div>
+                                            <button
+                                                onClick={() => resetFlowerCount(user.username)}
+                                                className="p-2 text-gray-400 hover:text-rose-600 transition-colors"
+                                            >
+                                                ↺
+                                            </button>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                if ((flowerCount[user.username] || 0) === 0) {
+                                                    setZeroQuantityNotice(true);
+                                                    setTimeout(() => setZeroQuantityNotice(false), 2000);
+                                                    return;
+                                                }
+                                                setSelectedUser(user.username);
+                                                setShowConfirmation(true);
+                                            }}
+                                            className="px-6 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-full font-semibold hover:shadow-lg transition-shadow"
+                                        >
+                                            Send
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
+            </div>
+            {/* Confirmation Modal */}
+            {/* Confirmation Modal - Updated Colors */}
+            <AnimatePresence>
+                {showConfirmation && (
+                    <motion.div
+                        className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+                    >
+                        <motion.div
+                            className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl"
+                        >
+                            {isSuccess ? (
+                                <div className="text-center space-y-4">
+                                    <div className="inline-flex bg-rose-100 p-4 rounded-full">
+                                        <FaCheck className="text-4xl text-rose-600" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-800">Gift Sent!</h2>
+                                    <p className="text-gray-600">
+                                        Your roses are on their way 🌹
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    <h2 className="text-2xl font-bold text-gray-800 text-center">
+                                        Confirm Gift
+                                    </h2>
+                                    <div className="text-center">
+                                        <p className="text-lg text-gray-600">
+                                            Send{' '}
+                                            <span className="text-2xl font-bold text-rose-600">
+                                                {flowerCount[selectedUser!] || 0}
+                                            </span>{' '}
+                                            roses to{' '}
+                                            <span className="font-semibold text-green-700">
+                                                {selectedUser}
+                                            </span>?
+                                        </p>
+                                    </div>
+                                    <div className="flex justify-center space-x-4">
+                                        <button
+                                            onClick={() => {
+                                                setShowConfirmation(false);
+                                                setSelectedUser(null);
+                                            }}
+                                            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleConfirmSend}
+                                            className="px-6 py-2 bg-gradient-to-r from-rose-400 to-pink-500 text-white rounded-full font-semibold hover:shadow-md transition-shadow"
+                                        >
+                                            Confirm
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Zero Quantity Notice */}
-            {zeroQuantityNotice && (
-                <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-lg">
-                    Gift quantity is zero!
-                </div>
-            )}
+            <AnimatePresence>
+                {zeroQuantityNotice && (
+                    <motion.div
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-rose-100 text-rose-700 px-6 py-3 rounded-full shadow-lg"
+                    >
+                        <GiRose className="text-rose-500" />
+                        <span>Please add at least 1 rose to send!</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

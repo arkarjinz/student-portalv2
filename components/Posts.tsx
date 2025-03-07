@@ -1,16 +1,22 @@
 'use client';
+
 import React, { useEffect, useState, useRef } from "react";
 import { getLoggedInUser, isUserLoggedIn } from "@/service/AuthService";
 import { redirect } from "next/navigation";
 import { Post } from "@/ds/post.dto";
 import { getAllPosts } from "@/service/StudentPortalService";
-import { createPost, deletePost, updatePost } from "@/service/PostService";
+import { createPost, deletePost, updatePost, likePost, unlikePost, getLikedPosts } from "@/service/PostService";
 import Image from "next/image";
 import { GiRose } from "react-icons/gi";
+import { FaHeart } from "react-icons/fa";
+import ReactCalendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+import CountUp from 'react-countup';
+import { FiCalendar, FiClock, FiDownloadCloud, FiAlertCircle } from 'react-icons/fi';
 
-// Helper function to escape special characters in a regex
+
 function escapeRegExp(string: string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export default function Posts() {
@@ -21,31 +27,27 @@ export default function Posts() {
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-    // State for rude word detection & blocking (for posting)
+    // Rude word/blocking state...
     const [rudeAttempts, setRudeAttempts] = useState(0);
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockTimer, setBlockTimer] = useState(60);
     const [rudeNotice, setRudeNotice] = useState("");
-
-    // New state to control warning video visibility
     const [showWarningVideo, setShowWarningVideo] = useState(false);
 
-    // For live relative time display of createdAt
     const [now, setNow] = useState(new Date());
     const loggedInUser = getLoggedInUser();
 
-    // State for inline editing/updating a post
+    // Inline editing/updating states
     const [editingPostId, setEditingPostId] = useState<number | null>(null);
     const [editingContent, setEditingContent] = useState("");
 
-    // State for update-specific inappropriate attempt counter
-    const [updateAttempts, setUpdateAttempts] = useState(0);
-
-    // State for confirmation modal (update/delete)
+    // Confirmation modal states for update/delete (if needed)
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [confirmModalType, setConfirmModalType] = useState(""); // "delete" or "update"
     const [confirmModalPostId, setConfirmModalPostId] = useState<number | null>(null);
 
+    // Track liked posts (set of post IDs)
+    const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
     // List of prohibited words
     const rudeWords = `
 abbo
@@ -1440,6 +1442,13 @@ zipperhead
             redirect("/login");
         }
         fetchPosts();
+        // Fetch liked posts for the user
+        getLikedPosts(loggedInUser)
+            .then((res) => {
+                const liked: number[] = res.data;
+                setLikedPosts(new Set(liked));
+            })
+            .catch((err) => console.error(err));
     }, [page]);
 
     useEffect(() => {
@@ -1514,15 +1523,20 @@ zipperhead
         if (seconds < 0) seconds = 0;
         if (seconds < 5) return "just now";
         let interval = seconds / 31536000;
-        if (interval >= 1) return `${Math.floor(interval)} year${Math.floor(interval) > 1 ? "s" : ""} ago`;
+        if (interval >= 1)
+            return `${Math.floor(interval)} year${Math.floor(interval) > 1 ? "s" : ""} ago`;
         interval = seconds / 2592000;
-        if (interval >= 1) return `${Math.floor(interval)} month${Math.floor(interval) > 1 ? "s" : ""} ago`;
+        if (interval >= 1)
+            return `${Math.floor(interval)} month${Math.floor(interval) > 1 ? "s" : ""} ago`;
         interval = seconds / 86400;
-        if (interval >= 1) return `${Math.floor(interval)} day${Math.floor(interval) > 1 ? "s" : ""} ago`;
+        if (interval >= 1)
+            return `${Math.floor(interval)} day${Math.floor(interval) > 1 ? "s" : ""} ago`;
         interval = seconds / 3600;
-        if (interval >= 1) return `${Math.floor(interval)} hour${Math.floor(interval) > 1 ? "s" : ""} ago`;
+        if (interval >= 1)
+            return `${Math.floor(interval)} hour${Math.floor(interval) > 1 ? "s" : ""} ago`;
         interval = seconds / 60;
-        if (interval >= 1) return `${Math.floor(interval)} minute${Math.floor(interval) > 1 ? "s" : ""} ago`;
+        if (interval >= 1)
+            return `${Math.floor(interval)} minute${Math.floor(interval) > 1 ? "s" : ""} ago`;
         return `${Math.floor(seconds)} second${Math.floor(seconds) > 1 ? "s" : ""} ago`;
     };
 
@@ -1536,6 +1550,52 @@ zipperhead
             }
         });
         return Array.from(new Set(foundWords));
+    };
+
+    // Inline editing functions
+    const handleEditPost = (postId: number, currentContent: string) => {
+        setEditingPostId(postId);
+        setEditingContent(currentContent);
+    };
+
+    const cancelEdit = () => {
+        setEditingPostId(null);
+        setEditingContent("");
+    };
+
+    // Updated confirmUpdate: no "(edited)" appended; if rude words are found, show warning video and delete the post.
+    const confirmUpdate = () => {
+        if (editingPostId === null) return;
+        const updatedContent = editingContent; // use as-is
+        const rudeFound = findRudeWords(updatedContent);
+        if (rudeFound.length > 0) {
+            setShowWarningVideo(true);
+            // Delete the post due to rude words in update
+            deletePost(editingPostId, loggedInUser)
+                .then(() => {
+                    setPosts((prevPosts) => prevPosts.filter(post => post.id !== editingPostId));
+                    alert("Your post contained inappropriate language and has been deleted.");
+                    setEditingPostId(null);
+                    setEditingContent("");
+                    setTimeout(() => {
+                        setShowWarningVideo(false);
+                    }, 3000);
+                })
+                .catch(err => console.error(err));
+            return;
+        }
+        // Otherwise, update the post normally
+        updatePost(editingPostId, loggedInUser, updatedContent)
+            .then(() => {
+                setPosts((prevPosts) =>
+                    prevPosts.map(post =>
+                        post.id === editingPostId ? { ...post, content: updatedContent } : post
+                    )
+                );
+                setEditingPostId(null);
+                setEditingContent("");
+            })
+            .catch(err => console.error(err));
     };
 
     const handleCreatePost = () => {
@@ -1557,7 +1617,6 @@ zipperhead
                     `Your post contains inappropriate word(s): "${foundRudeWords.join('", "')}". Please remove them.`
                 );
             }
-            // Always trigger the warning video whenever rude words are found
             setShowWarningVideo(true);
             return;
         }
@@ -1569,19 +1628,51 @@ zipperhead
             content: newPost,
             title: "New Post",
             createdAt: new Date().toISOString(),
+            likeCount: 0
         };
         createPost(newPostObj)
             .then(() => {
                 setPosts([]);
                 setPage(1);
+                getLikedPosts(loggedInUser)
+                    .then(res => setLikedPosts(new Set(res.data)))
+                    .catch(err => console.error(err));
             })
-            .catch((err) => {
-                console.error(err);
-            });
+            .catch(err => console.error(err));
         setNewPost("");
     };
 
-    // Render a smaller warning video (ohmygah.mp4) in a container under the warning message.
+    // Toggle like/unlike for a post
+    const handleToggleLike = (postId: number) => {
+        if (likedPosts.has(postId)) {
+            unlikePost(postId, loggedInUser)
+                .then(() => {
+                    setPosts(prevPosts =>
+                        prevPosts.map(post =>
+                            post.id === postId ? { ...post, likeCount: Math.max((post.likeCount ?? 0) - 1, 0) } : post
+                        )
+                    );
+                    setLikedPosts(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(postId);
+                        return newSet;
+                    });
+                })
+                .catch(err => console.error(err));
+        } else {
+            likePost(postId, loggedInUser)
+                .then(() => {
+                    setPosts(prevPosts =>
+                        prevPosts.map(post =>
+                            post.id === postId ? { ...post, likeCount: (post.likeCount ?? 0) + 1 } : post
+                        )
+                    );
+                    setLikedPosts(prev => new Set(prev).add(postId));
+                })
+                .catch(err => console.error(err));
+        }
+    };
+
     const renderWarningVideo = () => (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
             <div className="bg-white p-2 rounded shadow">
@@ -1596,7 +1687,6 @@ zipperhead
         </div>
     );
 
-    // Render a smaller ban video (angry.mp4) with countdown in a container.
     const renderBanVideo = () => (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
             <div className="bg-white p-2 rounded shadow">
@@ -1606,7 +1696,7 @@ zipperhead
         </div>
     );
 
-    // --- Confirmation and edit functions (unchanged) ---
+    // Confirmation modal for delete/update (if needed)
     const openConfirmModal = (actionType: string, postId: number) => {
         setConfirmModalType(actionType);
         setConfirmModalPostId(postId);
@@ -1623,92 +1713,22 @@ zipperhead
         if (confirmModalPostId === null) return;
         deletePost(confirmModalPostId, loggedInUser)
             .then(() => {
-                setPosts((prevPosts) =>
-                    prevPosts.filter((post) => post.id !== confirmModalPostId)
-                );
+                setPosts(prevPosts => prevPosts.filter(post => post.id !== confirmModalPostId));
             })
-            .catch((err) => {
-                console.error(err);
-            });
+            .catch(err => console.error(err));
         closeConfirmModal();
-    };
-
-    const handleEditPost = (postId: number, currentContent: string) => {
-        setEditingPostId(postId);
-        setEditingContent(currentContent);
-        setUpdateAttempts(0);
-    };
-
-    const cancelEdit = () => {
-        setEditingPostId(null);
-        setEditingContent("");
-        setUpdateAttempts(0);
-    };
-
-    const confirmUpdate = () => {
-        if (confirmModalPostId === null) return;
-        const foundRude = findRudeWords(editingContent);
-        if (foundRude.length > 0) {
-            setUpdateAttempts((prev) => prev + 1);
-            if (updateAttempts + 1 >= 5) {
-                deletePost(confirmModalPostId, loggedInUser)
-                    .then(() => {
-                        alert("Your post has been automatically deleted due to repeated inappropriate update attempts.");
-                        setPosts((prevPosts) =>
-                            prevPosts.filter((post) => post.id !== confirmModalPostId)
-                        );
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                    });
-                closeConfirmModal();
-                setEditingPostId(null);
-                setEditingContent("");
-                setUpdateAttempts(0);
-                return;
-            } else {
-                setRudeNotice(
-                    `Your update contains inappropriate word(s): "${foundRude.join('", "')}". Please remove them.`
-                );
-                closeConfirmModal();
-                return;
-            }
-        }
-        let updatedContent = editingContent;
-        if (!updatedContent.endsWith(" (edited)")) {
-            updatedContent += " (edited)";
-        }
-        updatePost(confirmModalPostId, loggedInUser, updatedContent)
-            .then(() => {
-                setPosts((prevPosts) =>
-                    prevPosts.map((post) =>
-                        post.id === confirmModalPostId ? { ...post, content: updatedContent } : post
-                    )
-                );
-                setEditingPostId(null);
-                setEditingContent("");
-                setUpdateAttempts(0);
-            })
-            .catch((err) => {
-                console.error(err);
-            });
-        closeConfirmModal();
-    };
-
-    const handleUpdatePost = (postId: number) => {
-        openConfirmModal("update", postId);
     };
 
     const handleDeletePost = (postId: number) => {
         openConfirmModal("delete", postId);
     };
-    // --- End of confirmation/edit functions ---
 
     return (
         <div className="container mx-auto grid grid-cols-12 gap-4 p-5">
             {isBlocked && renderBanVideo()}
             {!isBlocked && rudeNotice && showWarningVideo && renderWarningVideo()}
-            {/* Confirmation Modal */}
+
+            {/* Confirmation Modal for delete/update if needed */}
             {confirmModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center z-50">
                     <div className="absolute inset-0 bg-black opacity-50"></div>
@@ -1798,9 +1818,7 @@ zipperhead
                     posts.map((post: Post, index: number) => (
                         <div
                             key={`${post.id}-${index}`}
-                            className={`bg-white shadow-md rounded-xl p-5 mb-5 transition-shadow duration-300 hover:shadow-lg ${
-                                post.postOwner === loggedInUser ? "bg-blue-50 border border-blue-200" : ""
-                            }`}
+                            className="relative bg-white shadow-md rounded-xl p-5 mb-5 transition-shadow duration-300 hover:shadow-lg"
                         >
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center space-x-3">
@@ -1832,7 +1850,7 @@ zipperhead
                                             </>
                                         ) : (
                                             <div className="flex gap-2">
-                                                <button onClick={() => handleUpdatePost(post.id)}>
+                                                <button onClick={confirmUpdate}>
                                                     <Image src="/update.svg" alt="save" width={20} height={20} />
                                                 </button>
                                                 <button onClick={cancelEdit} className="text-gray-500">
@@ -1845,7 +1863,6 @@ zipperhead
                             </div>
                             <p className="text-xs text-gray-400 mb-2">
                                 {timeSince(post.createdAt)}
-                                {post.content.endsWith(" (edited)") && <span className="ml-2 text-xs text-gray-500">(edited)</span>}
                             </p>
                             {editingPostId === post.id ? (
                                 <textarea
@@ -1854,8 +1871,16 @@ zipperhead
                                     className="w-full p-2 border border-gray-300 rounded"
                                 />
                             ) : (
-                                <p className="text-gray-700">{post.content}</p>
+                                <p className="text-gray-700 mb-2">{post.content}</p>
                             )}
+                            {/* Heart button at bottom-right */}
+                            <button
+                                onClick={() => handleToggleLike(post.id)}
+                                className="absolute bottom-2 right-2 flex items-center gap-1"
+                            >
+                                <FaHeart size={20} className={likedPosts.has(post.id) ? "text-red-500" : "text-gray-400"} />
+                                <span className="text-sm">{post.likeCount ?? 0}</span>
+                            </button>
                         </div>
                     ))
                 ) : (
@@ -1865,10 +1890,10 @@ zipperhead
                 {loading && <p className="text-center text-gray-500">Loading more posts...</p>}
             </main>
 
-            {/* Right: Announcements Section */}
+            {/* Right: Announcements */}
             <aside className="col-span-12 md:col-span-3">
                 <div className="bg-gradient-to-r from-green-50 to-green-90 rounded-xl p-6 text-white shadow-lg">
-                    <h2 className="text-2xl font-bold mb-3">Announcements</h2>
+                    <h2 className="text-2xl font-bold mb-3 text-green-800">Announcements</h2>
                     <ul className="space-y-3">
                         <li className="flex items-center">
                             <span className="mr-2">📅</span>
@@ -1889,9 +1914,10 @@ zipperhead
                     </ul>
                 </div>
             </aside>
+            {/* Render warning video if needed */}
+            {showWarningVideo && renderWarningVideo()}
         </div>
     );
 }
-
 
 

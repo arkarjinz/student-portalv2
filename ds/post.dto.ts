@@ -7,4 +7,5 @@ export type Post = {
     postOwner: string;
     profileImage?: string;
     roseCount?: number;
+    likeCount?: number;
 };

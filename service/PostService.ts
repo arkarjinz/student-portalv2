@@ -2,7 +2,6 @@ import axios from "axios";
 import { getToken } from "@/service/AuthService";
 import { Post } from "@/ds/post.dto";
 
-// Add token to each request
 axios.interceptors.request.use(
     (config) => {
         config.headers["Authorization"] = getToken();
@@ -17,7 +16,19 @@ export const createPost = (postDto: Post) =>
     axios.post(`${POST_BACKEND_URL}`, postDto);
 
 export const deletePost = (postId: number, postOwner: string) =>
-    axios.delete(`${POST_BACKEND_URL}/${postId}?postOwner=${postOwner}`);
+    axios.delete(`${POST_BACKEND_URL}/${postId}`, { params: { postOwner } });
 
 export const updatePost = (postId: number, postOwner: string, newContent: string) =>
-    axios.put(`${POST_BACKEND_URL}/${postId}?postOwner=${postOwner}`, { content: newContent });
+    axios.put(`${POST_BACKEND_URL}/${postId}`, { content: newContent }, { params: { postOwner } });
+
+// Like endpoint
+export const likePost = (postId: number, username: string) =>
+    axios.post(`${POST_BACKEND_URL}/${postId}/like`, null, { params: { username } });
+
+// Unlike endpoint
+export const unlikePost = (postId: number, username: string) =>
+    axios.post(`${POST_BACKEND_URL}/${postId}/unlike`, null, { params: { username } });
+
+// Fetch liked posts for the user
+export const getLikedPosts = (username: string) =>
+    axios.get(`${POST_BACKEND_URL}/liked`, { params: { username } });
