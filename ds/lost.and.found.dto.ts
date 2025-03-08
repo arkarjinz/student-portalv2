@@ -1,18 +1,10 @@
-
-/*
-private Integer id;
-    private String title;
-    private String description;
-    private String imageUrl;
-    private boolean isFound;
-    private String studentName;
- */
-
+// lost.and.found.dto.ts
 export type LostAndFoundDto = {
-    id?:number;
+    id?: number;
     title: string;
     description: string;
-    image:string;
+    // For GET responses, image will now be a Base64 string
+    imageBase64?: string;
     isFound: boolean;
     studentName?: string;
-}
+};
