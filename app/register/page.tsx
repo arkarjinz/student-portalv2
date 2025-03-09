@@ -121,32 +121,98 @@ export default function RegisterPage() {
                                 type="text"
                                 id="studentNumber"
                                 value={studentNumber}
-                                onChange={(e) => setStudentNumber(e.target.value)}
-                                placeholder="Your student ID"
+                                onChange={(e) => {
+                                    // Convert to uppercase and remove invalid characters
+                                    const value = e.target.value.toUpperCase().replace(/[^0-9TNT-]/g, '');
+
+                                    // Auto-format TNT- prefix
+                                    let formattedValue = value;
+                                    if (!value.startsWith('TNT-')) {
+                                        formattedValue = 'TNT-' + value.replace(/^TNT-/, '');
+                                    }
+
+                                    // Limit to 4 digits after TNT-
+                                    const parts = formattedValue.split('-');
+                                    if (parts.length > 1) {
+                                        const numbers = parts[1].replace(/\D/g, '').substring(0, 4);
+                                        formattedValue = `TNT-${numbers}`;
+                                    }
+
+                                    setStudentNumber(formattedValue);
+
+                                    // Validate format
+                                    const isValid = /^TNT-\d{4}$/.test(formattedValue);
+                                    if (!isValid) {
+                                        setErrorStudentNumber('Student number must be in the format TNT- followed by 4 digits (e.g., TNT-0001)');
+                                    } else {
+                                        setErrorStudentNumber('');
+                                    }
+                                }}
+                                placeholder="TNT-0000"
                                 className={`${inputClass} ${errorStudentNumber ? errorClass : 'border-gray-300'}`}
                                 required
+                                maxLength={8} // TNT- + 4 digits
                             />
                             {
-                                errorStudentNumber  && <span className="text-red-500 text-xs">{errorStudentNumber}</span>
+                                errorStudentNumber && <span className="text-red-500 text-xs">{errorStudentNumber}</span>
                             }
                         </div>
                         {/* Profile Image Selection */}
-                        <div>
-                            <label className="mb-2 text-md block" htmlFor="profileImage">
-                                Choose Profile
-                            </label>
-                            <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-4">
+                            <div className="text-center">
+                                <label className="text-lg font-semibold text-gray-700 mb-4 inline-block">
+                                    🎭 Choose Your Avatar
+                                </label>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Select an avatar that represents you in our community
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-3 gap-6 px-4">
                                 {['duke1.jpg', 'duke2.jpg', 'duke3.jpg'].map((image) => (
-                                    <Image
+                                    <div
                                         key={image}
-                                        src={`/${image}`}
-                                        alt={`Thumbnail ${image}`}
-                                        width={50}
-                                        height={50}
+                                        className={`relative group cursor-pointer transition-all duration-300 ${
+                                            userProfile === image
+                                                ? 'scale-110 ring-4 ring-[#52681D] ring-offset-2'
+                                                : 'hover:scale-105 hover:ring-2 hover:ring-gray-200'
+                                        } rounded-full p-1`}
                                         onClick={() => setUserProfile(image)}
-                                        style={{ width: '50px', height: '50px' }}
-                                        className={`w-full h-auto rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-105 hover:glow ${userProfile === image ? 'border-4 border-[#52681D]' : ''}`}
-                                    />
+                                    >
+                                        <div
+                                            className="aspect-square overflow-hidden rounded-full border-4 border-white shadow-lg">
+                                            <Image
+                                                src={`/${image}`}
+                                                alt={`Avatar ${image}`}
+                                                width={120}
+                                                height={120}
+                                                className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-110"
+                                            />
+                                        </div>
+
+                                        {/* Selection Checkmark */}
+                                        {userProfile === image && (
+                                            <div
+                                                className="absolute top-0 right-0 bg-[#52681D] rounded-full p-1 transform -translate-y-1/4 shadow-md">
+                                                <svg
+                                                    className="w-5 h-5 text-white"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        )}
+
+                                        {/* Hover Effect */}
+                                        <div
+                                            className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"/>
+                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -213,7 +279,8 @@ export default function RegisterPage() {
                         className="w-[400px] h-full hidden rounded-r-2xl md:block object-cover"
                     />
                     {/* Text on Image */}
-                    <div className="absolute hidden bottom-10 right-6 p-6 bg-white bg-opacity-30 backdrop-blur-sm rounded drop-shadow-lg md:block">
+                    <div
+                        className="absolute hidden bottom-10 right-6 p-6 bg-white bg-opacity-30 backdrop-blur-sm rounded drop-shadow-lg md:block">
                         <span className="text-white text-xl">
                             We’ve been using Untitled to kick-start every new project and can’t
                             imagine working without it.

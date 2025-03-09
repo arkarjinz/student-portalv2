@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { getLoggedInUser, isUserLoggedIn } from "@/service/AuthService";
 import { redirect } from "next/navigation";
 import { Post } from "@/ds/post.dto";
-import { getAllPosts } from "@/service/StudentPortalService";
+import {getAllPosts, getProfileImageByStudentUserName} from "@/service/StudentPortalService";
 import { createPost, deletePost, updatePost, likePost, unlikePost, getLikedPosts } from "@/service/PostService";
 import Image from "next/image";
 import { GiRose } from "react-icons/gi";
@@ -1438,6 +1438,18 @@ zipperhead
         .map(word => word.trim())
         .filter(word => word.length > 0);
 
+    // Add profile image state at the top of the component
+    const [userProfileImage, setUserProfileImage] = useState<string>("default.png");
+
+// Add this useEffect to fetch user's profile image
+    useEffect(() => {
+        if (loggedInUser) {
+            getProfileImageByStudentUserName(loggedInUser)
+                .then(res => setUserProfileImage(res.data))
+                .catch(err => console.error("Error fetching profile image:", err));
+        }
+    }, [loggedInUser]);
+
     // Effects and functions remain unchanged
 
     useEffect(() => {
@@ -1840,11 +1852,15 @@ zipperhead
                 <div className="bg-white shadow-xl rounded-2xl p-6">
                     <div className="flex items-center gap-4">
                         <Image
-                            src="/girl.png"
+                            src={`/${userProfileImage}`}
                             alt="User"
                             width={56}
                             height={56}
                             className="rounded-full border-2 border-green-200"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/default.png";
+                            }}
+                            unoptimized // Add if you're having image optimization issues
                         />
                         <div className="flex-1">
               <textarea
@@ -1899,6 +1915,10 @@ zipperhead
                                     width={48}
                                     height={48}
                                     className="rounded-full border-2 border-green-200"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/default.png";
+                                    }}
+                                    unoptimized
                                 />
                                 <GiRose className="absolute -right-1 -top-1 text-red-500 bg-white rounded-full p-0.5" />
                             </div>

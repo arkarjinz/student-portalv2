@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getToken } from "@/service/AuthService";
+import {getToken, logout} from "@/service/AuthService";
 import { Post } from "@/ds/post.dto";
 
 axios.interceptors.request.use(
@@ -8,6 +8,17 @@ axios.interceptors.request.use(
         return config;
     },
     (error) => Promise.reject(error)
+);
+
+axios.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 401) {
+            logout();
+            window.dispatchEvent(new CustomEvent("authChange"));
+        }
+        return Promise.reject(error);
+    }
 );
 
 const POST_BACKEND_URL = "http://localhost:8080/api/student-portal/post";
