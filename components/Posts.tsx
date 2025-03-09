@@ -2000,6 +2000,8 @@ zipperhead
                             { title: "One Piece", image: "one.jpg" },
                             { title: "The Pet Girl Of Sakurasou", image: "sou.png" },
                             { title: "How To Raise A Boring Girlfriend", image: "girlfriend.jpg" },
+                            { title: "Bocchi The Rock", image: "bocchi.jpg" },
+                            { title: "Gintama", image: "gintama.jpg" },
                         ].map((anime) => (
                             <a
                                 key={anime.title}

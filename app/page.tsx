@@ -6,6 +6,7 @@ import GetApp from "@/components/GetApp";
 import {useEffect, useCallback} from "react";
 import {isUserLoggedIn} from "@/service/AuthService";
 import {useRouter} from "next/navigation";
+import Footer from "@/components/Footer";
 
 
 
@@ -27,7 +28,7 @@ export default function Home() {
             <Hero/>
             <Feature/>
             <MeetUs/>
-            <GetApp/>
+            <Footer/>
         </>
     );
 }

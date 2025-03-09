@@ -1,16 +1,12 @@
 // NAVIGATION
 'use client';
 export const NAV_LINKS = [
-    { href: '/', key: 'home', label: 'Home' },
-    { href: '/', key: 'how_unityverse_work', label: 'How UnityVerse Work?' },
-    { href: '/', key: 'services', label: 'Services' },
-
+    { href: '/clubs', key: 'clubs', label: 'Clubs' },
+    { href: '/gift' , key: 'gift', label: 'Gift'} ,
+    {  href: '/posts' , key: 'posts', label: 'Posts'} ,
+    { href: '/lost-and-found' , key: 'lost_and_found', label: 'Lost and Found'},
     { href: '/userprofile', key: 'Profile', label: 'Profile' },
 
-    {  href: '/posts' , key: 'posts', label: 'Posts'} ,
-    { href: '/gift' , key: 'gift', label: 'Gift'} ,
-    { href: '/lost-and-found' , key: 'lost_and_found', label: 'Lost and Found'},
-    { href: '/clubs', key: 'clubs', label: 'Clubs' },
 ];
 
 // CAMP SECTION

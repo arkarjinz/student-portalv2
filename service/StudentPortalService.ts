@@ -2,12 +2,12 @@
 
 
 
-import axios from "axios";
+
 import {getToken} from "@/service/AuthService";
 import {Post} from "@/ds/post.dto";
 import {LostAndFoundDto} from "@/ds/lost.and.found.dto";
 import {UserDto} from "@/ds/userprofile.dto";
-
+import axios from "axios";
 
 axios.interceptors.request.use(function (config) {
     // Do something before request is sent
@@ -19,6 +19,9 @@ axios.interceptors.request.use(function (config) {
 });
 
 const STUDENT_PORTAL_URI = "http://localhost:8080/api/student-portal";
+
+export const getAllStudents =  () =>
+    axios.get(`${STUDENT_PORTAL_URI}/students`);
 //http://localhost:8080/api/student-portal/id/name
 export const getStudentIdByStudent = (username: string) =>
     axios.get(`${STUDENT_PORTAL_URI}/id/${username}`);

@@ -1,106 +1,182 @@
-"use client";
-
-
-import Pagination from "@/components/Pagination";
+'use client'
+import { useEffect, useState } from "react";
+import { StudentDto } from "@/ds/student.dto";
+import { getAllStudents } from "@/service/StudentPortalService";
+import { ClipLoader } from "react-spinners";
+import { RoseUpdate } from "@/ds/rose.update";
+import { updateRouseCount } from "@/service/RoseGiftService";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
-import { useState } from "react";
-import { FaSpinner } from "react-icons/fa";
 
+interface StudentWithLoading extends StudentDto {
+  loading: boolean;
+}
 
-type Student = {
-  studentId: number;
-  name: string;
-  photo: string;
-  flower_receive: string;
-  flower_own: string;
-};
+export default function GiftListPage() {
+  const [studentData, setStudentData] = useState<StudentWithLoading[]>([]);
 
-const columns = [
-  {
-    header: "Photo",
-    accessor: "photo",
-  },
-  {
-    header: "Student ID",
-    accessor: "studentId",
-  },
-  {
-    header: "Name",
-    accessor: "name",
-  },
-  {
-    header: "Flower (Own)",
-    accessor: "flower_own",
-  },
-  {
-    header: "Flower (Receive)",
-    accessor: "flower_receive",
-  },
-  {
-    header: "Add Flowers",
-    accessor: "actions",
-  },
-];
+  useEffect(() => {
+    getAllStudents()
+        .then(res =>
+            setStudentData(
+                res.data.map((student: StudentDto) => ({ ...student, loading: false }))
+            )
+        )
+        .catch(err => console.log(err));
+  }, []);
 
-const GiftListPage = () => {
-  const [flowerCount, setFlowerCount] = useState<{ [key: number]: string }>({});
-
-  const handleInputChange = (studentId: number, value: string) => {
-    setFlowerCount((prev) => ({ ...prev, [studentId]: value }));
+  const updateRouseCountHandler = async (roseUpdate: RoseUpdate) => {
+    const response = await updateRouseCount(roseUpdate);
+    console.log(response);
   };
 
-  const handleAddFlower = (studentId: number) => {
-    const count = flowerCount[studentId] || "0";
-    console.log(`Adding ${count} flowers to student ID ${studentId}`);
-  };
+  const handleRoseCountChange = (id: number, newCount: number) => {
+    setStudentData(prevData =>
+        prevData.map(student =>
+            student.id === id ? { ...student, loading: true } : student
+        )
+    );
 
-  const renderRow = (item: Student) => (
-    <tr key={item.studentId} className="border-b border-gray-200 even:bg-gray-10 text-sm hover:bg-green-50 hover:bg-opacity-10">
-      <td className="p-4">
-        <Image
-          src={item.photo}
-          alt="Student Photo"
-          width={40}
-          height={40}
-          className="w-10 h-10 rounded-full object-cover"
-        />
-      </td>
-      <td>{item.studentId}</td>
-      <td>{item.name}</td>
-      <td>{item.flower_own}</td>
-      <td>{item.flower_receive}</td>
-      <td>
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            className="border rounded-md p-1 w-16"
-            value={flowerCount[item.studentId] || ""}
-            onChange={(e) => handleInputChange(item.studentId, e.target.value)}
-          />
-          <button className="p-1.5 rounded-full border-none bg-green-50 text-white hover:bg-green-50 hover:bg-opacity-80">
-          <Image src="/gift.svg" alt="Gift" width={20} height={20} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
+    const student = studentData.find(student => student.id === id);
+    if (student) {
+      const roseUpdate: RoseUpdate = { username: student.username, roses: newCount };
+      updateRouseCountHandler(roseUpdate).then(() => {
+        setStudentData(prevData =>
+            prevData.map(student =>
+                student.id === id ? { ...student, roseCount: newCount, loading: false } : student
+            )
+        );
+      });
+    }
+  };
 
   return (
-    <div className="bg-gray-10 p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold text-blue-70">All Students and Their Flowers</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <div className="flex items-center gap-4 self-end"></div>
+      <div className="min-h-screen p-8 bg-[#f6f8f6]">
+        <div className="max-w-4xl mx-auto">
+          {/* Header Section */}
+          <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 text-center"
+          >
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-600 to-pink-600">
+              Rose Garden
+            </span>
+            </h1>
+            <p className="text-gray-600 text-lg">Spread love through virtual roses 🌹</p>
+          </motion.div>
+
+          {/* Student List */}
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-rose-50 to-pink-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-rose-800 font-semibold">Profile</th>
+                  <th className="px-6 py-4 text-left text-rose-800 font-semibold">Student</th>
+                  <th className="px-6 py-4 text-left text-rose-800 font-semibold">Roses Given</th>
+                </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                {studentData.map(student => (
+                    <motion.tr
+                        key={student.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="hover:bg-rose-50/30 transition-colors duration-150"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="relative">
+                            <Image
+                                src={`/${student.profileImage}`}
+                                alt={student.username}
+                                width={48}
+                                height={48}
+                                className="rounded-full object-cover shadow-sm border-2 border-rose-100"
+                                unoptimized
+                            />
+                            <div className="absolute -bottom-1 -right-1 bg-rose-500 text-white rounded-full px-2 py-1 text-xs border-2 border-white">
+                              #{student.id}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-gray-800">{student.username}</div>
+                        <div className="text-sm text-gray-500">{student.name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {student.loading ? (
+                              <ClipLoader size={20} color="#e11d48" />
+                          ) : (
+                              <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() =>
+                                        handleRoseCountChange(
+                                            student.id,
+                                            Math.max(0, student.roseCount - 1)
+                                        )
+                                    }
+                                    className="p-1.5 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors"
+                                >
+                                  -
+                                </button>
+                                <motion.div
+                                    key={student.roseCount}
+                                    initial={{ scale: 0.8 }}
+                                    animate={{ scale: 1 }}
+                                    className="w-12 text-center font-semibold text-rose-600"
+                                >
+                                  {student.roseCount}
+                                </motion.div>
+                                <button
+                                    onClick={() => handleRoseCountChange(student.id, student.roseCount + 1)}
+                                    className="p-1.5 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors"
+                                >
+                                  +
+                                </button>
+                              </div>
+                          )}
+                        </div>
+                      </td>
+                    </motion.tr>
+                ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Empty State */}
+            {studentData.length === 0 && (
+                <div className="p-12 text-center text-gray-500">
+                  <div className="mb-6 inline-block p-6 bg-rose-50 rounded-full">
+                    <svg
+                        className="w-16 h-16 text-rose-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                      <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                      <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M4 12a8 8 0 1116 0 8 8 0 01-16 0z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-lg">No students found in the garden</p>
+                </div>
+            )}
+          </div>
         </div>
       </div>
-      {/* LIST */}
-      {/*<Table columns={columns} renderRow={renderRow} data={studentsData} />*/}
-      {/* PAGINATION */}
-      <Pagination />
-    </div>
   );
-};
-
-export default GiftListPage;
+}

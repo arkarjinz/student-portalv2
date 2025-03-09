@@ -15,3 +15,6 @@ export const createLostAndFound = (formData: FormData, id: number) =>
     axios.post(`${LOST_AND_FOUND_URI}/${id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
     });
+
+export const toggleLostAndFoundStatus = (itemId: number, isFound: boolean) =>
+    axios.patch(`${LOST_AND_FOUND_URI}/${itemId}/toggle?isFound=${isFound}`);

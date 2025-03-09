@@ -44,7 +44,7 @@ export default function LoginPage() {
                 const event = new CustomEvent('authChange', { detail: { isLoggedIn: true } });
                 window.dispatchEvent(event);
 
-                router.push('/');
+                router.push('/posts');
                 router.refresh();
             })
             .catch((error) => console.error('Login failed:', error));
@@ -101,9 +101,6 @@ export default function LoginPage() {
                                 />
                                 <span>Remember Me</span>
                             </label>
-                            <a href="/auth/forgot-password" className="font-bold">
-                                Forgot password
-                            </a>
                         </div>
                         {/* Submit Button */}
                         <button
